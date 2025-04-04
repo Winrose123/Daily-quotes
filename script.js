@@ -170,19 +170,23 @@ function displayTags(categories) {
 }
 
 async function getQuoteFromAPI() {
+    // Try direct API first
     try {
-        const response = await fetch('https://api.quotable.io/quotes/random?limit=1', {
+        const response = await fetch('https://api.quotable.io/random', {
             method: 'GET',
             headers: {
-                'Accept': 'application/json'
-            }
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors',
+            cache: 'no-cache'
         });
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const [data] = await response.json();
+        const data = await response.json();
         if (!data || !data.content) {
             throw new Error('Invalid quote data');
         }
@@ -191,9 +195,35 @@ async function getQuoteFromAPI() {
             text: data.content,
             author: data.author
         };
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+    } catch (firstError) {
+        console.error('Direct API failed:', firstError);
+        
+        // Try through CORS proxy
+        try {
+            const response = await fetch('https://corsproxy.io/?https://api.quotable.io/random', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Proxy HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (!data || !data.content) {
+                throw new Error('Invalid quote data from proxy');
+            }
+            
+            return {
+                text: data.content,
+                author: data.author
+            };
+        } catch (proxyError) {
+            console.error('Proxy API failed:', proxyError);
+            throw proxyError;
+        }
     }
 }
 
