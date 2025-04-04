@@ -174,12 +174,24 @@ async function getNewQuote() {
     try {
         toggleLoading(true);
         
-        // Try to fetch from Quotable API
-        const response = await fetch('https://api.quotable.io/random');
+        // Try to fetch from Quotable API with proper headers
+        const response = await fetch('https://api.quotable.io/random', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors'
+        });
+
         if (!response.ok) {
-            throw new Error('Failed to fetch quote');
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
         const data = await response.json();
+        if (!data || !data.content) {
+            throw new Error('Invalid quote data received');
+        }
         
         // Fade out current quote
         quoteText.style.opacity = '0';
@@ -194,7 +206,7 @@ async function getNewQuote() {
                 quoteAuthor.style.opacity = '1';
                 
                 // Determine and display categories
-                const quoteCategories = data.tags || determineQuoteCategories(data.content);
+                const quoteCategories = data.tags || [];
                 displayTags(quoteCategories);
                 resolve();
             }, 300);
@@ -202,23 +214,38 @@ async function getNewQuote() {
         
     } catch (error) {
         console.error('Error fetching quote:', error);
-        // Use a fallback quote if API fails
-        const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
-        quoteText.textContent = `"${fallbackQuote.quoteText}"`;
-        quoteAuthor.textContent = `\u2014 ${fallbackQuote.quoteAuthor}`;
-        quoteText.style.opacity = '1';
-        quoteAuthor.style.opacity = '1';
         
-        // Show error message to user
-        const errorMessage = document.createElement('div');
-        errorMessage.className = 'error-message';
-        errorMessage.textContent = 'Could not fetch new quote. Please check your internet connection.';
-        document.querySelector('.quote-card').appendChild(errorMessage);
-        
-        // Remove error message after 3 seconds
-        setTimeout(() => {
-            errorMessage.remove();
-        }, 3000);
+        // Try alternate API
+        try {
+            const response = await fetch('https://api.themotivate365.com/stoic-quote');
+            const data = await response.json();
+            
+            quoteText.textContent = `"${data.quote}"`;
+            quoteAuthor.textContent = `\u2014 ${data.author || 'Unknown'}`;
+            quoteText.style.opacity = '1';
+            quoteAuthor.style.opacity = '1';
+            displayTags(['stoic', 'philosophy']);
+            return;
+        } catch (backupError) {
+            console.error('Backup API also failed:', backupError);
+            // Use a fallback quote if both APIs fail
+            const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+            quoteText.textContent = `"${fallbackQuote.quoteText}"`;
+            quoteAuthor.textContent = `\u2014 ${fallbackQuote.quoteAuthor}`;
+            quoteText.style.opacity = '1';
+            quoteAuthor.style.opacity = '1';
+            
+            // Show error message to user
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message';
+            errorMessage.textContent = 'Network error. Using offline quotes.';
+            document.querySelector('.quote-card').appendChild(errorMessage);
+            
+            // Remove error message after 3 seconds
+            setTimeout(() => {
+                errorMessage.remove();
+            }, 3000);
+        }
     } finally {
         toggleLoading(false);
     }
