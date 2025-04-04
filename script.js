@@ -54,7 +54,7 @@ let currentTheme = localStorage.getItem('theme') || 'light';
 let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Add touch feedback for all buttons
     document.querySelectorAll('button').forEach(button => {
         button.addEventListener('touchstart', () => {
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add(currentTheme);
     updateThemeButton();
     showFavorites();
-    getNewQuote();
+    await getNewQuote(); // Wait for the first quote to load
 });
 
 // Share Functions
@@ -174,16 +174,19 @@ async function getNewQuote() {
     try {
         toggleLoading(true);
         
-        // Try to fetch from Quotable API first (more reliable)
-        try {
-            const response = await fetch('https://api.quotable.io/random');
-            const data = await response.json();
-            
-            // Fade out current quote
-            quoteText.style.opacity = '0';
-            quoteAuthor.style.opacity = '0';
-            
-            // Update and fade in new quote after fade out
+        // Try to fetch from Quotable API
+        const response = await fetch('https://api.quotable.io/random');
+        if (!response.ok) {
+            throw new Error('Failed to fetch quote');
+        }
+        const data = await response.json();
+        
+        // Fade out current quote
+        quoteText.style.opacity = '0';
+        quoteAuthor.style.opacity = '0';
+        
+        // Update and fade in new quote after fade out
+        await new Promise(resolve => {
             setTimeout(() => {
                 quoteText.textContent = `"${data.content}"`;
                 quoteAuthor.textContent = `\u2014 ${data.author || 'Unknown'}`;
@@ -193,63 +196,29 @@ async function getNewQuote() {
                 // Determine and display categories
                 const quoteCategories = data.tags || determineQuoteCategories(data.content);
                 displayTags(quoteCategories);
+                resolve();
             }, 300);
-            
-            return;
-        } catch (apiError) {
-            console.log('Primary API failed, trying fallback...');
-        }
-        
-        // Fallback to Forismatic API
-        const fetchQuote = () => new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            const callbackName = 'jsonpCallback_' + Date.now();
-            
-            // Define the callback function
-            window[callbackName] = (data) => {
-                delete window[callbackName];
-                document.body.removeChild(script);
-                resolve(data);
-            };
-            
-            // Handle errors
-            script.onerror = () => {
-                delete window[callbackName];
-                document.body.removeChild(script);
-                reject(new Error('Failed to fetch quote'));
-            };
-            
-            // Set up the JSONP URL
-            script.src = `https://api.forismatic.com/api/1.0/?method=getQuote&lang=en&format=jsonp&jsonp=${callbackName}`;
-            document.body.appendChild(script);
         });
         
-        const data = await fetchQuote();
-        
-        // Fade out current quote
-        quoteText.style.opacity = '0';
-        quoteAuthor.style.opacity = '0';
-        
-        // Update and fade in new quote after fade out
-        setTimeout(() => {
-            quoteText.textContent = `"${data.quoteText}"`;
-            quoteAuthor.textContent = `\u2014 ${data.quoteAuthor || 'Unknown'}`;
-            quoteText.style.opacity = '1';
-            quoteAuthor.style.opacity = '1';
-            
-            // Determine and display categories
-            const quoteCategories = determineQuoteCategories(data.quoteText);
-            displayTags(quoteCategories);
-        }, 300);
-        
     } catch (error) {
-        console.error('Error:', error);
-        // Use a fallback quote if everything fails
+        console.error('Error fetching quote:', error);
+        // Use a fallback quote if API fails
         const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
         quoteText.textContent = `"${fallbackQuote.quoteText}"`;
         quoteAuthor.textContent = `\u2014 ${fallbackQuote.quoteAuthor}`;
         quoteText.style.opacity = '1';
         quoteAuthor.style.opacity = '1';
+        
+        // Show error message to user
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'error-message';
+        errorMessage.textContent = 'Could not fetch new quote. Please check your internet connection.';
+        document.querySelector('.quote-card').appendChild(errorMessage);
+        
+        // Remove error message after 3 seconds
+        setTimeout(() => {
+            errorMessage.remove();
+        }, 3000);
     } finally {
         toggleLoading(false);
     }
