@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Daily Quote Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#646cff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="apple-touch-startup-image" href="icons/splash.png">
+</head>
+<body class="light">
+    <div class="container">
+        <div class="header">
+            <h1>Daily Inspiration</h1>
+            <button id="themeToggle">🌙 Dark</button>
+        </div>
+        
+        <div class="quote-card">
+            <div class="quote-content">
+                <p id="quoteText">Click below for inspiration</p>
+                <p id="quoteAuthor"></p>
+                <div id="quoteTags" class="quote-tags"></div>
+            </div>
+            <div class="controls">
+                <button id="newQuote">New Quote</button>
+                <button id="saveQuote">❤️ Save</button>
+            </div>
+            <div class="share-buttons">
+                <button id="twitterShare" class="share-btn twitter">𝕏 Share on Twitter</button>
+                <button id="facebookShare" class="share-btn facebook">📘 Share on Facebook</button>
+                <button id="whatsappShare" class="share-btn whatsapp">💬 Share on WhatsApp</button>
+                <button id="copyQuote" class="share-btn copy">📋 Copy Quote</button>
+            </div>
+        </div>
+
+        <div class="favorites-section" id="favoritesSection">
+            <h2>Favorites</h2>
+            <ul id="favoritesList"></ul>
+            <div class="pagination" id="favoritesPagination">
+                <button id="prevPage" class="page-btn">← Previous</button>
+                <span id="pageInfo">Page 1 of 1</span>
+                <button id="nextPage" class="page-btn">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
