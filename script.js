@@ -174,7 +174,33 @@ async function getNewQuote() {
     try {
         toggleLoading(true);
         
-        // Create a promise to handle the JSONP request
+        // Try to fetch from Quotable API first (more reliable)
+        try {
+            const response = await fetch('https://api.quotable.io/random');
+            const data = await response.json();
+            
+            // Fade out current quote
+            quoteText.style.opacity = '0';
+            quoteAuthor.style.opacity = '0';
+            
+            // Update and fade in new quote after fade out
+            setTimeout(() => {
+                quoteText.textContent = `"${data.content}"`;
+                quoteAuthor.textContent = `\u2014 ${data.author || 'Unknown'}`;
+                quoteText.style.opacity = '1';
+                quoteAuthor.style.opacity = '1';
+                
+                // Determine and display categories
+                const quoteCategories = data.tags || determineQuoteCategories(data.content);
+                displayTags(quoteCategories);
+            }, 300);
+            
+            return;
+        } catch (apiError) {
+            console.log('Primary API failed, trying fallback...');
+        }
+        
+        // Fallback to Forismatic API
         const fetchQuote = () => new Promise((resolve, reject) => {
             const script = document.createElement('script');
             const callbackName = 'jsonpCallback_' + Date.now();
@@ -207,7 +233,7 @@ async function getNewQuote() {
         // Update and fade in new quote after fade out
         setTimeout(() => {
             quoteText.textContent = `"${data.quoteText}"`;
-            quoteAuthor.textContent = `— ${data.quoteAuthor || 'Unknown'}`;
+            quoteAuthor.textContent = `\u2014 ${data.quoteAuthor || 'Unknown'}`;
             quoteText.style.opacity = '1';
             quoteAuthor.style.opacity = '1';
             
@@ -221,7 +247,9 @@ async function getNewQuote() {
         // Use a fallback quote if everything fails
         const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
         quoteText.textContent = `"${fallbackQuote.quoteText}"`;
-        quoteAuthor.textContent = `— ${fallbackQuote.quoteAuthor}`;
+        quoteAuthor.textContent = `\u2014 ${fallbackQuote.quoteAuthor}`;
+        quoteText.style.opacity = '1';
+        quoteAuthor.style.opacity = '1';
     } finally {
         toggleLoading(false);
     }
