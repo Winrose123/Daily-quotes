@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>Daily Quote Generator</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#646cff">
+    <meta name="theme-color" content="#646cff" media="(prefers-color-scheme: light)">    
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <link rel="apple-touch-startup-image" href="icons/splash.png">
@@ -19,7 +21,7 @@
             <button id="themeToggle">🌙 Dark</button>
         </div>
         
-        <div class="quote-card">
+            <div class="quote-card">
             <div class="quote-content">
                 <p id="quoteText">Click below for inspiration</p>
                 <p id="quoteAuthor"></p>
@@ -49,5 +51,6 @@
     </div>
 
     <script src="script.js"></script>
+    </div>
 </body>
 </html>

@@ -23,6 +23,19 @@ const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
 const pageInfo = document.getElementById('pageInfo');
 
+// Vibration handling
+let hasUserInteracted = false;
+
+document.addEventListener('click', () => {
+    hasUserInteracted = true;
+}, { once: true });
+
+function vibrate(pattern) {
+    if (hasUserInteracted && window.navigator.vibrate) {
+        window.navigator.vibrate(pattern);
+    }
+}
+
 // Pagination state
 let currentPage = 1;
 const itemsPerPage = 5;
@@ -40,39 +53,58 @@ const categories = {
 let currentTheme = localStorage.getItem('theme') || 'light';
 let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 
-// Initialize
-document.body.classList.add(currentTheme);
-updateThemeButton();
-showFavorites();
-fetchRandomQuote();
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Add touch feedback for all buttons
+    document.querySelectorAll('button').forEach(button => {
+        button.addEventListener('touchstart', () => {
+            button.style.transform = 'scale(0.95)';
+            vibrate(50);
+        }, { passive: true });
 
-// Event Listeners
-newQuoteBtn.addEventListener('click', fetchRandomQuote);
-saveQuoteBtn.addEventListener('click', saveFavorite);
-themeToggle.addEventListener('click', toggleTheme);
-twitterShareBtn.addEventListener('click', shareOnTwitter);
-facebookShareBtn.addEventListener('click', shareOnFacebook);
-whatsappShareBtn.addEventListener('click', shareOnWhatsApp);
-copyQuoteBtn.addEventListener('click', copyToClipboard);
+        button.addEventListener('touchend', () => {
+            button.style.transform = '';
+        }, { passive: true });
+    });
 
-// Pagination event listeners
-prevPageBtn.addEventListener('click', () => {
-    if (currentPage > 1) {
-        currentPage--;
-        showFavorites();
-    }
-});
+    // Initialize event listeners
+    newQuoteBtn.addEventListener('click', getNewQuote);
+    saveQuoteBtn.addEventListener('click', saveFavorite);
+    themeToggle.addEventListener('click', () => {
+        vibrate(50);
+        toggleTheme();
+    });
+    twitterShareBtn.addEventListener('click', shareOnTwitter);
+    facebookShareBtn.addEventListener('click', shareOnFacebook);
+    whatsappShareBtn.addEventListener('click', shareOnWhatsApp);
+    copyQuoteBtn.addEventListener('click', copyToClipboard);
 
-nextPageBtn.addEventListener('click', () => {
-    const totalPages = Math.ceil(favorites.length / itemsPerPage);
-    if (currentPage < totalPages) {
-        currentPage++;
-        showFavorites();
-    }
+    // Pagination event listeners
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            showFavorites();
+        }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(favorites.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            showFavorites();
+        }
+    });
+
+    // Initialize theme and load first quote
+    document.body.classList.add(currentTheme);
+    updateThemeButton();
+    showFavorites();
+    getNewQuote();
 });
 
 // Share Functions
 function shareOnTwitter() {
+    vibrate(50);
     const quote = quoteText.textContent;
     const author = quoteAuthor.textContent;
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(quote + ' ' + author)}`;
@@ -80,6 +112,7 @@ function shareOnTwitter() {
 }
 
 function shareOnFacebook() {
+    vibrate(50);
     const quote = quoteText.textContent;
     const author = quoteAuthor.textContent;
     const fbUrl = `https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(quote + ' ' + author)}`;
@@ -87,6 +120,7 @@ function shareOnFacebook() {
 }
 
 function shareOnWhatsApp() {
+    vibrate(50);
     const quote = quoteText.textContent;
     const author = quoteAuthor.textContent;
     const text = `${quote} ${author}`;
@@ -95,23 +129,19 @@ function shareOnWhatsApp() {
 }
 
 async function copyToClipboard() {
+    vibrate([50, 30]);
     const quote = quoteText.textContent;
     const author = quoteAuthor.textContent;
     const textToCopy = `${quote} ${author}`;
     
     try {
         await navigator.clipboard.writeText(textToCopy);
-        const copyBtn = document.getElementById('copyQuote');
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = '✓ Copied!';
-        copyBtn.classList.add('copied');
-        
+        copyQuoteBtn.textContent = '✓ Copied!';
         setTimeout(() => {
-            copyBtn.textContent = originalText;
-            copyBtn.classList.remove('copied');
+            copyQuoteBtn.textContent = '📋 Copy';
         }, 2000);
     } catch (err) {
-        console.error('Failed to copy text:', err);
+        console.error('Failed to copy:', err);
     }
 }
 
@@ -139,7 +169,8 @@ function displayTags(categories) {
         .join('');
 }
 
-async function fetchRandomQuote() {
+async function getNewQuote() {
+    vibrate(50);
     try {
         toggleLoading(true);
         
@@ -167,29 +198,23 @@ async function fetchRandomQuote() {
             document.body.appendChild(script);
         });
         
-        try {
-            const data = await fetchQuote();
+        const data = await fetchQuote();
+        
+        // Fade out current quote
+        quoteText.style.opacity = '0';
+        quoteAuthor.style.opacity = '0';
+        
+        // Update and fade in new quote after fade out
+        setTimeout(() => {
+            quoteText.textContent = `"${data.quoteText}"`;
+            quoteAuthor.textContent = `— ${data.quoteAuthor || 'Unknown'}`;
+            quoteText.style.opacity = '1';
+            quoteAuthor.style.opacity = '1';
             
-            // Fade out current quote
-            quoteText.style.opacity = '0';
-            quoteAuthor.style.opacity = '0';
-            
-            // Update and fade in new quote after fade out
-            setTimeout(() => {
-                quoteText.textContent = `"${data.quoteText}"`;
-                quoteAuthor.textContent = `— ${data.quoteAuthor || 'Unknown'}`;
-                quoteText.style.opacity = '1';
-                quoteAuthor.style.opacity = '1';
-                
-                // Determine and display categories
-                const quoteCategories = determineQuoteCategories(data.quoteText);
-                displayTags(quoteCategories);
-            }, 300);
-            
-        } catch (apiError) {
-            console.log('API failed, using fallback quote');
-            throw apiError; // This will trigger the fallback in the outer catch block
-        }
+            // Determine and display categories
+            const quoteCategories = determineQuoteCategories(data.quoteText);
+            displayTags(quoteCategories);
+        }, 300);
         
     } catch (error) {
         console.error('Error:', error);
@@ -213,6 +238,7 @@ function saveFavorite() {
         localStorage.setItem('favorites', JSON.stringify(favorites));
         showFavorites();
     }
+    vibrate([50, 50, 50]);
 }
 
 function removeFavorite(index) {

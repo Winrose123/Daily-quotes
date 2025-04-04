@@ -4,6 +4,21 @@
     --light-text: #333;
     --dark-text: #fff;
     --primary-color: #646cff;
+    --bg-color: #ffffff;
+    --text-color: #2c3e50;
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --gradient-start: #646cff;
+    --gradient-end: #9089fc;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --body-gradient: linear-gradient(135deg, #646cff 0%, #9089fc 100%);
+}
+
+.dark {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --body-gradient: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
 
 * {
@@ -47,7 +62,16 @@ body, button, .quote-card, .tag, .share-btn {
 body {
     font-family: system-ui, -apple-system, sans-serif;
     min-height: 100vh;
-    padding: 2rem;
+    padding: 20px;
+    background: var(--body-gradient);
+    color: var(--text-color);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 body.light {
@@ -73,13 +97,28 @@ body.dark {
 }
 
 .quote-card {
-    background: rgba(100, 108, 255, 0.1);
-    border-radius: 12px;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 32px var(--shadow-color);
     animation: floatIn 0.6s ease-out;
     transform-origin: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 600px;
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+    .quote-card {
+        background: rgba(255, 255, 255, 0.95);
+    }
+    
+    .dark .quote-card {
+        background: rgba(0, 0, 0, 0.8);
+    }
 }
 
 .quote-card:hover {
@@ -92,25 +131,54 @@ body.dark {
 }
 
 #quoteText {
-    font-size: 1.5rem;
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
+    margin-bottom: 1.5rem;
     line-height: 1.6;
-    margin-bottom: 1rem;
-    opacity: 1;
+    opacity: 0;
     transition: opacity 0.3s;
+    font-weight: 500;
+    color: var(--text-color);
+    text-align: center;
+}
+
+.dark #quoteText {
+    background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 #quoteAuthor {
-    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--text-color);
+    opacity: 0.8;
     text-align: right;
-    color: var(--primary-color);
-    margin-bottom: 1rem;
+    margin-top: 1rem;
+    font-style: italic;
 }
 
 .quote-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+}
+
+.tag {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(100, 108, 255, 0.2);
+}
+
+.tag:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(100, 108, 255, 0.3);
 }
 
 .tag {
@@ -143,60 +211,77 @@ body.dark {
 .controls {
     display: flex;
     gap: 1rem;
-    justify-content: flex-end;
-    margin-bottom: 1rem;
+    margin-top: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.controls button {
+    flex: 1;
+    min-width: 140px;
+    max-width: 200px;
+    height: 48px;
+    border-radius: 24px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.controls button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+}
+
+.controls button:active {
+    transform: scale(0.95) translateY(2px);
+}
+
+.controls button:hover::after {
+    transform: translateX(100%);
 }
 
 .share-buttons {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    padding-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
     border-top: 1px solid rgba(100, 108, 255, 0.1);
 }
 
 .share-btn {
+    height: 44px;
+    border-radius: 22px;
     font-size: 0.9rem;
-    padding: 0.5rem 1rem;
-}
-
-.share-btn.twitter {
-    background-color: #1DA1F2;
-}
-
-.share-btn.facebook {
-    background-color: #4267B2;
-}
-
-.share-btn.whatsapp {
-    background-color: #25D366;
-}
-
-.share-btn.copy {
-    background-color: #28a745;
-}
-
-.share-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .share-btn:active {
-    transform: translateY(0);
+    transform: scale(0.95);
 }
 
-.share-btn.copied {
-    background-color: #28a745;
-    animation: pulse 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.loading .quote-content {
-    background: linear-gradient(90deg, rgba(100, 108, 255, 0.1), rgba(100, 108, 255, 0.2), rgba(100, 108, 255, 0.1));
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-}
+.share-btn.twitter { background: #1DA1F2; }
+.share-btn.facebook { background: #4267B2; }
+.share-btn.whatsapp { background: #25D366; }
+.share-btn.copy { background: #28a745; }
 
 button {
     padding: 0.75rem 1.5rem;
@@ -237,14 +322,33 @@ button:hover {
 }
 
 .favorites-section {
-    margin-top: 2rem;
-    padding: 1rem;
-    border-top: 2px solid var(--primary-color);
+    margin-top: 3rem;
+    display: none;
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.favorites-section h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
 }
 
 #favoritesList {
     list-style: none;
-    margin-top: 1rem;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
 }
 
 #favoritesList li {
@@ -335,6 +439,46 @@ button:hover {
 }
 
 @media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .quote-card {
+        padding: 1.5rem;
+    }
+
+    .controls {
+        flex-direction: column;
+    }
+
+    .controls button {
+        max-width: none;
+        width: 100%;
+    }
+
+    .share-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .share-btn {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    #favoritesList li {
+        padding: 1rem;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+    }
+
+    .page-btn {
+        flex: 1;
+        text-align: center;
+        padding: 0.75rem;
+        min-width: 120px;
+    }
     body {
         padding: 1rem;
     }
@@ -345,5 +489,41 @@ button:hover {
     
     button {
         padding: 0.5rem 1rem;
+    }
+}
+
+@media (display-mode: standalone) {
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+
+    .container {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
+    }
+
+    .quote-card {
+        margin: 0 -1rem;
+        border-radius: 30px;
+        padding: 2rem 1.5rem;
+    }
+
+    .share-buttons {
+        position: sticky;
+        bottom: env(safe-area-inset-bottom);
+        background: var(--bg-color);
+        margin: 1rem -1rem -1rem;
+        padding: 1rem;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+    }
+
+    .favorites-section {
+        margin: 2rem -1rem -1rem;
+        border-radius: 30px 30px 0 0;
+        padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);
     }
 }
