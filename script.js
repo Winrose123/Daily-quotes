@@ -169,17 +169,31 @@ function displayTags(categories) {
         .join('');
 }
 
-// Cache for quotes
-let quotesCache = [];
-
-async function loadQuotes() {
+async function getQuoteFromAPI() {
     try {
-        const response = await fetch('https://type.fit/api/quotes');
-        quotesCache = await response.json();
-        return true;
+        const response = await fetch('https://api.quotable.io/quotes/random?limit=1', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const [data] = await response.json();
+        if (!data || !data.content) {
+            throw new Error('Invalid quote data');
+        }
+        
+        return {
+            text: data.content,
+            author: data.author
+        };
     } catch (error) {
-        console.error('Failed to load quotes:', error);
-        return false;
+        console.error('API Error:', error);
+        throw error;
     }
 }
 
@@ -188,22 +202,8 @@ async function getNewQuote() {
     try {
         toggleLoading(true);
         
-        // If cache is empty, try to load quotes
-        if (quotesCache.length === 0) {
-            await loadQuotes();
-        }
-        
-        // Get a random quote from cache or fallback
-        let quote, author;
-        if (quotesCache.length > 0) {
-            const data = quotesCache[Math.floor(Math.random() * quotesCache.length)];
-            quote = data.text;
-            author = data.author;
-        } else {
-            const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
-            quote = fallbackQuote.quoteText;
-            author = fallbackQuote.quoteAuthor;
-        }
+        // Try to get a new quote from the API
+        const data = await getQuoteFromAPI();
         
         // Fade out current quote
         quoteText.style.opacity = '0';
@@ -212,8 +212,8 @@ async function getNewQuote() {
         // Update and fade in new quote after fade out
         await new Promise(resolve => {
             setTimeout(() => {
-                quoteText.textContent = `"${quote}"`;
-                quoteAuthor.textContent = `\u2014 ${author || 'Unknown'}`;
+                quoteText.textContent = `"${data.text}"`;
+                quoteAuthor.textContent = `\u2014 ${data.author || 'Unknown'}`;
                 quoteText.style.opacity = '1';
                 quoteAuthor.style.opacity = '1';
                 
@@ -224,8 +224,8 @@ async function getNewQuote() {
         });
         
     } catch (error) {
-        console.error('Error displaying quote:', error);
-        // Use a fallback quote if everything fails
+        console.error('Error fetching quote:', error);
+        // Use a fallback quote
         const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
         quoteText.textContent = `"${fallbackQuote.quoteText}"`;
         quoteAuthor.textContent = `\u2014 ${fallbackQuote.quoteAuthor}`;
@@ -235,7 +235,7 @@ async function getNewQuote() {
         // Show error message to user
         const errorMessage = document.createElement('div');
         errorMessage.className = 'error-message';
-        errorMessage.textContent = 'Network error. Using offline quotes.';
+        errorMessage.textContent = 'Could not connect to quote service. Using offline quotes.';
         document.querySelector('.quote-card').appendChild(errorMessage);
         
         // Remove error message after 3 seconds
