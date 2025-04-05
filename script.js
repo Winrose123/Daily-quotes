@@ -170,137 +170,100 @@ function displayTags(categories) {
 }
 
 async function getQuoteFromAPI() {
-    const apiEndpoints = [
-        'https://api.quotable.io/random',
-        'https://type.fit/api/quotes'
-    ];
+    try {
+        console.log('Fetching quote from API...');
+        const response = await fetch('https://api.quotable.io/quotes/random?limit=1', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors',
+            cache: 'no-cache'
+        });
 
-    let lastError = null;
-
-    // Try each endpoint until one works
-    for (const endpoint of apiEndpoints) {
-        try {
-            console.log(`Trying endpoint: ${endpoint}`);
-            const response = await fetch(endpoint, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                },
-                mode: 'cors',
-                cache: 'no-cache'
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Handle different API response formats
-            if (endpoint.includes('quotable.io')) {
-                if (!data || !data.content) {
-                    throw new Error('Invalid quote data');
-                }
-                return {
-                    text: data.content,
-                    author: data.author || 'Unknown'
-                };
-            } else if (endpoint.includes('type.fit')) {
-                if (!Array.isArray(data) || data.length === 0) {
-                    throw new Error('Invalid quote data');
-                }
-                const quote = data[Math.floor(Math.random() * data.length)];
-                return {
-                    text: quote.text,
-                    author: quote.author?.replace(', type.fit', '') || 'Unknown'
-                };
-            }
-        } catch (error) {
-            console.error(`Error with ${endpoint}:`, error);
-            lastError = error;
-            // Continue to next endpoint
-            continue;
+        console.log('API Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    }
 
-    // If we get here, all endpoints failed
-    throw lastError || new Error('All API endpoints failed');
+        const [data] = await response.json();
+        console.log('API Response data:', data);
+
+        if (!data || !data.content) {
+            throw new Error('Invalid quote data');
+        }
+
+        return {
+            text: data.content,
+            author: data.author || 'Unknown',
+            tags: data.tags || ['inspirational']
+        };
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
 }
 
 async function getNewQuote() {
     vibrate(50);
-    let errorDiv = document.querySelector('.error-message');
-    if (errorDiv) {
-        errorDiv.remove(); // Remove any existing error message
-    }
 
     try {
         toggleLoading(true);
-        console.log('Starting quote fetch...');
-        
-        // Check internet connection first
-        if (!navigator.onLine) {
-            throw new Error('No internet connection');
-        }
         
         // Try to get a new quote from the API
         const data = await getQuoteFromAPI();
-        console.log('Successfully got quote:', data);
         
-        // Fade out current quote
+        // Start fade out animation
+        quoteText.style.transition = 'opacity 0.3s ease-out';
+        quoteAuthor.style.transition = 'opacity 0.3s ease-out';
         quoteText.style.opacity = '0';
         quoteAuthor.style.opacity = '0';
         
-        // Update and fade in new quote after fade out
-        await new Promise(resolve => {
-            setTimeout(() => {
-                quoteText.textContent = `"${data.text}"`;
-                quoteAuthor.textContent = `\u2014 ${data.author}`;
-                quoteText.style.opacity = '1';
-                quoteAuthor.style.opacity = '1';
-                
-                // Add tags
-                displayTags(['inspirational']);
-                resolve();
-            }, 300);
-        });
+        // Wait for fade out to complete
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-    } catch (error) {
-        console.error('Error fetching quote:', error);
-        console.log('Falling back to offline quotes...');
+        // Update quote content
+        quoteText.textContent = `"${data.text}"`;
+        quoteAuthor.textContent = `\u2014 ${data.author}`;
         
-        // Use a fallback quote
-        const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
-        quoteText.textContent = `"${fallbackQuote.quoteText}"`;
-        quoteAuthor.textContent = `\u2014 ${fallbackQuote.quoteAuthor}`;
+        // Start fade in animation
+        quoteText.style.transition = 'opacity 0.5s ease-in';
+        quoteAuthor.style.transition = 'opacity 0.5s ease-in';
         quoteText.style.opacity = '1';
         quoteAuthor.style.opacity = '1';
         
-        // Show appropriate error message to user
-        const errorMessage = document.createElement('div');
-        errorMessage.className = 'error-message';
+        // Update tags if available
+        displayTags(data.tags || ['inspirational']);
         
-        if (!navigator.onLine) {
-            errorMessage.textContent = 'No internet connection. Using offline quotes.';
-        } else if (error.message.includes('All API endpoints failed')) {
-            errorMessage.textContent = 'Quote services are currently unavailable. Using offline quotes.';
-        } else if (error.message.includes('Failed to fetch')) {
-            errorMessage.textContent = 'Network error. Using offline quotes.';
-        } else {
-            errorMessage.textContent = 'Could not load quote. Using offline quotes.';
-        }
+    } catch (error) {
+        console.error('Error fetching quote:', error);
         
-        document.querySelector('.quote-card').appendChild(errorMessage);
+        // Use a fallback quote with smooth transition
+        const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
         
-        // Remove error message after 5 seconds
-        setTimeout(() => {
-            if (errorMessage.parentNode) {
-                errorMessage.remove();
-            }
-        }, 5000);
+        // Fade out current quote if any
+        quoteText.style.transition = 'opacity 0.3s ease-out';
+        quoteAuthor.style.transition = 'opacity 0.3s ease-out';
+        quoteText.style.opacity = '0';
+        quoteAuthor.style.opacity = '0';
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Update with fallback quote
+        quoteText.textContent = `"${fallbackQuote.quoteText}"`;
+        quoteAuthor.textContent = `\u2014 ${fallbackQuote.quoteAuthor}`;
+        
+        // Fade in fallback quote
+        quoteText.style.transition = 'opacity 0.5s ease-in';
+        quoteAuthor.style.transition = 'opacity 0.5s ease-in';
+        quoteText.style.opacity = '1';
+        quoteAuthor.style.opacity = '1';
+        
+        // Update tags
+        displayTags(['inspirational']);
     } finally {
         toggleLoading(false);
-        console.log('Quote fetch complete.');
     }
 }
 
