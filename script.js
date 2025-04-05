@@ -1,10 +1,115 @@
 // Fallback quotes in case the API fails
 const fallbackQuotes = [
-    { quoteText: "Be the change you wish to see in the world.", quoteAuthor: "Mahatma Gandhi" },
-    { quoteText: "The only way to do great work is to love what you do.", quoteAuthor: "Steve Jobs" },
-    { quoteText: "Life is what happens when you're busy making other plans.", quoteAuthor: "John Lennon" },
-    { quoteText: "Success is not final, failure is not fatal: it is the courage to continue that counts.", quoteAuthor: "Winston Churchill" },
-    { quoteText: "The future belongs to those who believe in the beauty of their dreams.", quoteAuthor: "Eleanor Roosevelt" }
+    // Inspirational
+    {
+        quoteText: "Life is what happens while you're busy making other plans.",
+        quoteAuthor: "John Lennon",
+        tags: ['life', 'inspirational']
+    },
+    {
+        quoteText: "The only way to do great work is to love what you do.",
+        quoteAuthor: "Steve Jobs",
+        tags: ['work', 'inspirational']
+    },
+    // Wisdom
+    {
+        quoteText: "The journey of a thousand miles begins with one step.",
+        quoteAuthor: "Lao Tzu",
+        tags: ['wisdom', 'motivation']
+    },
+    {
+        quoteText: "What you seek is seeking you.",
+        quoteAuthor: "Rumi",
+        tags: ['wisdom', 'spiritual']
+    },
+    // Success
+    {
+        quoteText: "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+        quoteAuthor: "Winston Churchill",
+        tags: ['success', 'courage']
+    },
+    {
+        quoteText: "The harder you work for something, the greater you'll feel when you achieve it.",
+        quoteAuthor: "Anonymous",
+        tags: ['success', 'work']
+    },
+    // Life
+    {
+        quoteText: "In three words I can sum up everything I've learned about life: it goes on.",
+        quoteAuthor: "Robert Frost",
+        tags: ['life', 'wisdom']
+    },
+    {
+        quoteText: "Life is either a daring adventure or nothing at all.",
+        quoteAuthor: "Helen Keller",
+        tags: ['life', 'adventure']
+    },
+    // Dreams
+    {
+        quoteText: "The future belongs to those who believe in the beauty of their dreams.",
+        quoteAuthor: "Eleanor Roosevelt",
+        tags: ['dreams', 'future']
+    },
+    {
+        quoteText: "All our dreams can come true if we have the courage to pursue them.",
+        quoteAuthor: "Walt Disney",
+        tags: ['dreams', 'courage']
+    },
+    // Love
+    {
+        quoteText: "The best thing to hold onto in life is each other.",
+        quoteAuthor: "Audrey Hepburn",
+        tags: ['love', 'life']
+    },
+    {
+        quoteText: "Where there is love there is life.",
+        quoteAuthor: "Mahatma Gandhi",
+        tags: ['love', 'life']
+    },
+    // Philosophy
+    {
+        quoteText: "He who has a why to live can bear almost any how.",
+        quoteAuthor: "Friedrich Nietzsche",
+        tags: ['philosophy', 'purpose']
+    },
+    {
+        quoteText: "The unexamined life is not worth living.",
+        quoteAuthor: "Socrates",
+        tags: ['philosophy', 'wisdom']
+    },
+    // Motivation
+    {
+        quoteText: "The only limit to our realization of tomorrow will be our doubts of today.",
+        quoteAuthor: "Franklin D. Roosevelt",
+        tags: ['motivation', 'future']
+    },
+    {
+        quoteText: "Don't watch the clock; do what it does. Keep going.",
+        quoteAuthor: "Sam Levenson",
+        tags: ['motivation', 'perseverance']
+    },
+    // Science
+    {
+        quoteText: "The important thing is not to stop questioning.",
+        quoteAuthor: "Albert Einstein",
+        tags: ['science', 'curiosity']
+    },
+    {
+        quoteText: "The good thing about science is that it's true whether or not you believe in it.",
+        quoteAuthor: "Neil deGrasse Tyson",
+        tags: ['science', 'truth']
+    },
+    // Art
+    {
+        quoteText: "Art enables us to find ourselves and lose ourselves at the same time.",
+        quoteAuthor: "Thomas Merton",
+        tags: ['art', 'self-discovery']
+    },
+    {
+        quoteText: "Every artist was first an amateur.",
+        quoteAuthor: "Ralph Waldo Emerson",
+        tags: ['art', 'growth']
+    }
 ];
 
 const quoteText = document.getElementById('quoteText');
