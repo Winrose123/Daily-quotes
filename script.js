@@ -171,20 +171,25 @@ function displayTags(categories) {
 
 async function getQuoteFromAPI() {
     try {
-        const response = await fetch('https://dummyjson.com/quotes/random');
+        console.log('Fetching quote from API...');
+        const response = await fetch('https://goquotes-api.herokuapp.com/api/v1/random?count=1');
         
+        console.log('API Response status:', response.status);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
-        if (!data || !data.quote) {
+        console.log('API Response data:', data);
+        
+        if (!data || !data.quotes || !data.quotes[0]) {
             throw new Error('Invalid quote data');
         }
         
+        const quote = data.quotes[0];
         return {
-            text: data.quote,
-            author: data.author
+            text: quote.text,
+            author: quote.author || 'Unknown'
         };
     } catch (error) {
         console.error('API Error:', error);
@@ -196,9 +201,16 @@ async function getNewQuote() {
     vibrate(50);
     try {
         toggleLoading(true);
+        console.log('Starting quote fetch...');
+        
+        // Check internet connection first
+        if (!navigator.onLine) {
+            throw new Error('No internet connection');
+        }
         
         // Try to get a new quote from the API
         const data = await getQuoteFromAPI();
+        console.log('Successfully got quote:', data);
         
         // Fade out current quote
         quoteText.style.opacity = '0';
@@ -208,7 +220,7 @@ async function getNewQuote() {
         await new Promise(resolve => {
             setTimeout(() => {
                 quoteText.textContent = `"${data.text}"`;
-                quoteAuthor.textContent = `\u2014 ${data.author || 'Unknown'}`;
+                quoteAuthor.textContent = `\u2014 ${data.author}`;
                 quoteText.style.opacity = '1';
                 quoteAuthor.style.opacity = '1';
                 
@@ -220,6 +232,8 @@ async function getNewQuote() {
         
     } catch (error) {
         console.error('Error fetching quote:', error);
+        console.log('Falling back to offline quotes...');
+        
         // Use a fallback quote
         const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
         quoteText.textContent = `"${fallbackQuote.quoteText}"`;
@@ -227,10 +241,18 @@ async function getNewQuote() {
         quoteText.style.opacity = '1';
         quoteAuthor.style.opacity = '1';
         
-        // Show error message to user
+        // Show appropriate error message to user
         const errorMessage = document.createElement('div');
         errorMessage.className = 'error-message';
-        errorMessage.textContent = 'Could not connect to quote service. Using offline quotes.';
+        
+        if (!navigator.onLine) {
+            errorMessage.textContent = 'No internet connection. Using offline quotes.';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMessage.textContent = 'Network error. Using offline quotes.';
+        } else {
+            errorMessage.textContent = 'Could not load quote. Using offline quotes.';
+        }
+        
         document.querySelector('.quote-card').appendChild(errorMessage);
         
         // Remove error message after 3 seconds
@@ -239,6 +261,7 @@ async function getNewQuote() {
         }, 3000);
     } finally {
         toggleLoading(false);
+        console.log('Quote fetch complete.');
     }
 }
 
