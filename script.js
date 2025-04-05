@@ -268,9 +268,12 @@ function determineQuoteCategories(quoteText) {
     return matchedCategories;
 }
 
-function displayTags(categories) {
-    quoteTagsContainer.innerHTML = categories
-        .map(category => `<span class="tag">${category}</span>`)
+function formatTags(tags) {
+    if (!Array.isArray(tags) || tags.length === 0) {
+        return '<span class="tag">general</span>';
+    }
+    return tags
+        .map(tag => `<span class="tag">${tag.toLowerCase()}</span>`)
         .join('');
 }
 
@@ -409,9 +412,10 @@ async function getNewQuote() {
     try {
         toggleLoading(true);
         
+        // Start fade out
         quoteText.style.opacity = '0';
         quoteAuthor.style.opacity = '0';
-        quoteTags.style.opacity = '0';
+        quoteTagsContainer.style.opacity = '0';
 
         // Wait for fade out
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -427,18 +431,25 @@ async function getNewQuote() {
         // Update content
         quoteText.textContent = quote.text;
         quoteAuthor.textContent = `- ${quote.author}`;
-        quoteTags.innerHTML = formatTags(quote.tags);
+        
+        // Update and show tags
+        const tags = quote.tags || ['general'];
+        quoteTagsContainer.innerHTML = formatTags(tags);
 
-        // Start fade in
+        // Start fade in with slight delay for tags
         quoteText.style.opacity = '1';
         quoteAuthor.style.opacity = '1';
-        quoteTags.style.opacity = '1';
+        setTimeout(() => {
+            quoteTagsContainer.style.opacity = '1';
+        }, 200);
 
     } catch (error) {
         // In case of any other errors, show a fallback quote
         const quote = getRandomQuote(fallbackQuotes);
         quoteText.textContent = quote.text;
         quoteAuthor.textContent = `- ${quote.author}`;
+        quoteTagsContainer.innerHTML = formatTags(['inspirational']);
+        
         quoteTags.innerHTML = formatTags(quote.tags);
 
         // Ensure visibility
