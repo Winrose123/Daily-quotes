@@ -274,9 +274,63 @@ function displayTags(categories) {
         .join('');
 }
 
+// Quote cache
+let quoteCache = [];
+let isPreloading = false;
+
+// Preload quotes in background
+async function preloadQuotes() {
+    if (isPreloading) return;
+    isPreloading = true;
+
+    try {
+        const response = await fetch('https://api.quotable.io/quotes/random?limit=50', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors',
+            cache: 'no-cache'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+            throw new Error('Invalid quote data');
+        }
+
+        // Add new quotes to cache
+        quoteCache.push(...data.map(quote => ({
+            text: quote.content,
+            author: quote.author || 'Unknown',
+            tags: quote.tags || ['inspirational']
+        })));
+
+    } catch (error) {
+        console.error('Preload Error:', error);
+    } finally {
+        isPreloading = false;
+    }
+}
+
+// Get a quote from cache or API
 async function getQuoteFromAPI() {
     try {
-        console.log('Fetching quote from API...');
+        // If cache is low, preload more quotes
+        if (quoteCache.length < 10) {
+            preloadQuotes();
+        }
+
+        // If we have cached quotes, use one
+        if (quoteCache.length > 0) {
+            return quoteCache.shift();
+        }
+
+        // If cache is empty, fetch one quote immediately
         const response = await fetch('https://api.quotable.io/quotes/random?limit=1', {
             method: 'GET',
             headers: {
@@ -287,14 +341,11 @@ async function getQuoteFromAPI() {
             cache: 'no-cache'
         });
 
-        console.log('API Response status:', response.status);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const [data] = await response.json();
-        console.log('API Response data:', data);
-
         if (!data || !data.content) {
             throw new Error('Invalid quote data');
         }
