@@ -306,6 +306,10 @@ function detectCategories(text) {
     return categories.length > 0 ? categories : ['general'];
 }
 
+// API configuration
+const API_URL = 'https://quotes.rest/qod';
+const API_KEY = 'YOUR_API_KEY'; // Replace with your actual API key
+
 // Quote cache
 let quoteCache = [];
 let isPreloading = false;
@@ -379,29 +383,31 @@ async function getQuoteFromAPI() {
         }
 
         const data = await response.json();
-        if (!Array.isArray(data)) {
-            throw new Error('Invalid quote data');
+        
+        if (!data.contents || !data.contents.quotes || !data.contents.quotes[0]) {
+            throw new Error('Invalid API response format');
         }
 
-        // Get a random quote
-        const randomQuote = data[Math.floor(Math.random() * data.length)];
-
-        // Add the rest to cache
-        const otherQuotes = data.filter(q => q !== randomQuote);
-        const shuffled = otherQuotes.sort(() => 0.5 - Math.random());
-        quoteCache.push(...shuffled.slice(0, 50).map(quote => ({
-            text: quote.text,
+        const quote = data.contents.quotes[0];
+        const formattedQuote = {
+            text: quote.quote,
             author: quote.author || 'Unknown',
-            tags: detectCategories(quote.text)
-        })));
-
-        return {
-            text: randomQuote.text,
-            author: randomQuote.author || 'Unknown',
-            tags: detectCategories(randomQuote.text)
+            tags: [...(quote.categories || []), ...(quote.tags || [])]
         };
+
+        // Add additional categories based on content
+        const detectedCategories = detectCategories(formattedQuote.text);
+        formattedQuote.tags = [...new Set([...formattedQuote.tags, ...detectedCategories])];
+
+        // Add to cache if it's not already there
+        if (!quoteCache.some(q => q.text === formattedQuote.text)) {
+            quoteCache.push(formattedQuote);
+            saveQuoteCache();
+        }
+
+        return formattedQuote;
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('Error fetching quote:', error);
         throw error;
     }
 }
