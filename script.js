@@ -368,7 +368,7 @@ async function preloadQuotes() {
 // Get a quote from cache or API
 async function getQuoteFromAPI() {
     try {
-        // If cache is low, preload more quotes
+        // If we have cached quotes, use them
         if (quoteCache.length > 0) {
             const randomQuote = getRandomQuote(quoteCache);
             // Ensure the quote has tags
@@ -379,23 +379,41 @@ async function getQuoteFromAPI() {
         }
 
         // Fetch new quotes from API
-        const response = await fetch(API_URL);
+        const response = await fetch(API_URL, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
         if (!response.ok) {
-            throw new Error('Failed to fetch quotes');
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        
+        if (!Array.isArray(data)) {
+            throw new Error('Invalid API response format');
+        }
+
         // Format and cache all quotes
         const formattedQuotes = data.map(quote => ({
-            text: quote.text,
+            text: quote.text || '',
             author: quote.author || 'Unknown',
-            tags: detectCategories(quote.text)
-        }));
+            tags: detectCategories(quote.text || '')
+        })).filter(quote => quote.text.trim() !== '');
+
+        if (formattedQuotes.length === 0) {
+            throw new Error('No valid quotes received');
+        }
 
         // Update cache with new quotes
         quoteCache = formattedQuotes;
-        localStorage.setItem('quoteCache', JSON.stringify(quoteCache));
+        try {
+            localStorage.setItem('quoteCache', JSON.stringify(quoteCache));
+        } catch (storageError) {
+            console.warn('Failed to cache quotes:', storageError);
+        }
 
         // Return a random quote
         return getRandomQuote(formattedQuotes);
