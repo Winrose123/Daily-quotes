@@ -288,10 +288,9 @@ async function preloadQuotes() {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
             },
             mode: 'cors',
-            cache: 'no-cache'
+            cache: 'default'
         });
 
         if (!response.ok) {
@@ -335,10 +334,9 @@ async function getQuoteFromAPI() {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
             },
             mode: 'cors',
-            cache: 'no-cache'
+            cache: 'default'
         });
 
         if (!response.ok) {
@@ -367,36 +365,39 @@ async function getNewQuote() {
     try {
         toggleLoading(true);
         
-        // Try to get a new quote from the API
-        const data = await getQuoteFromAPI();
-        
-        // Start fade out animation
-        quoteText.style.transition = 'opacity 0.3s ease-out';
-        quoteAuthor.style.transition = 'opacity 0.3s ease-out';
         quoteText.style.opacity = '0';
         quoteAuthor.style.opacity = '0';
-        
-        // Wait for fade out to complete
+        quoteTags.style.opacity = '0';
+
+        // Wait for fade out
         await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Update quote content
-        quoteText.textContent = `"${data.text}"`;
-        quoteAuthor.textContent = `\u2014 ${data.author}`;
-        
-        // Start fade in animation
-        quoteText.style.transition = 'opacity 0.5s ease-in';
-        quoteAuthor.style.transition = 'opacity 0.5s ease-in';
+
+        let quote;
+        try {
+            quote = await getQuoteFromAPI();
+        } catch (error) {
+            // Silently fall back to local quotes
+            quote = getRandomQuote(fallbackQuotes);
+        }
+
+        // Update content
+        quoteText.textContent = quote.text;
+        quoteAuthor.textContent = `- ${quote.author}`;
+        quoteTags.innerHTML = formatTags(quote.tags);
+
+        // Start fade in
         quoteText.style.opacity = '1';
         quoteAuthor.style.opacity = '1';
-        
-        // Update tags if available
-        displayTags(data.tags || ['inspirational']);
-        
+        quoteTags.style.opacity = '1';
+
     } catch (error) {
-        console.error('Error fetching quote:', error);
-        
-        // Use a fallback quote with smooth transition
-        const fallbackQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+        // In case of any other errors, show a fallback quote
+        const quote = getRandomQuote(fallbackQuotes);
+        quoteText.textContent = quote.text;
+        quoteAuthor.textContent = `- ${quote.author}`;
+        quoteTags.innerHTML = formatTags(quote.tags);
+
+        // Ensure visibility
         
         // Fade out current quote if any
         quoteText.style.transition = 'opacity 0.3s ease-out';
