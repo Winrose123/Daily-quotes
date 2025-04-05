@@ -170,60 +170,25 @@ function displayTags(categories) {
 }
 
 async function getQuoteFromAPI() {
-    // Try direct API first
     try {
-        const response = await fetch('https://api.quotable.io/random', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            mode: 'cors',
-            cache: 'no-cache'
-        });
+        const response = await fetch('https://dummyjson.com/quotes/random');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
-        if (!data || !data.content) {
+        if (!data || !data.quote) {
             throw new Error('Invalid quote data');
         }
         
         return {
-            text: data.content,
+            text: data.quote,
             author: data.author
         };
-    } catch (firstError) {
-        console.error('Direct API failed:', firstError);
-        
-        // Try through CORS proxy
-        try {
-            const response = await fetch('https://corsproxy.io/?https://api.quotable.io/random', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Proxy HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            if (!data || !data.content) {
-                throw new Error('Invalid quote data from proxy');
-            }
-            
-            return {
-                text: data.content,
-                author: data.author
-            };
-        } catch (proxyError) {
-            console.error('Proxy API failed:', proxyError);
-            throw proxyError;
-        }
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
     }
 }
 
