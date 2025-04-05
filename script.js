@@ -274,6 +274,35 @@ function displayTags(categories) {
         .join('');
 }
 
+// Quote categories and their keywords
+const categoryKeywords = {
+    'motivation': ['success', 'achieve', 'goal', 'dream', 'possible', 'motivation', 'inspire', 'determination'],
+    'wisdom': ['wisdom', 'knowledge', 'learn', 'understand', 'truth', 'wise', 'mind', 'think'],
+    'life': ['life', 'live', 'journey', 'path', 'experience', 'moment', 'time'],
+    'love': ['love', 'heart', 'soul', 'relationship', 'together', 'feel'],
+    'success': ['success', 'achieve', 'accomplish', 'win', 'victory', 'goal'],
+    'happiness': ['happy', 'happiness', 'joy', 'smile', 'laugh', 'pleasure'],
+    'leadership': ['lead', 'leader', 'guide', 'direction', 'vision', 'team'],
+    'philosophy': ['philosophy', 'meaning', 'existence', 'purpose', 'truth', 'reality'],
+    'friendship': ['friend', 'friendship', 'together', 'relationship', 'trust'],
+    'inspiration': ['inspire', 'inspiration', 'dream', 'hope', 'believe']
+};
+
+// Detect categories for a quote
+function detectCategories(text) {
+    text = text.toLowerCase();
+    const categories = [];
+    
+    for (const [category, keywords] of Object.entries(categoryKeywords)) {
+        if (keywords.some(keyword => text.includes(keyword))) {
+            categories.push(category);
+        }
+    }
+    
+    // If no categories detected, mark as 'general'
+    return categories.length > 0 ? categories : ['general'];
+}
+
 // Quote cache
 let quoteCache = [];
 let isPreloading = false;
@@ -306,11 +335,11 @@ async function preloadQuotes() {
         // Take first 50 quotes
         const selected = shuffled.slice(0, 50);
 
-        // Add new quotes to cache
+        // Add new quotes to cache with detected categories
         quoteCache.push(...selected.map(quote => ({
             text: quote.text,
             author: quote.author || 'Unknown',
-            tags: ['inspirational'] // This API doesn't provide tags
+            tags: detectCategories(quote.text)
         })));
 
     } catch (error) {
@@ -360,13 +389,13 @@ async function getQuoteFromAPI() {
         quoteCache.push(...shuffled.slice(0, 50).map(quote => ({
             text: quote.text,
             author: quote.author || 'Unknown',
-            tags: ['inspirational']
+            tags: detectCategories(quote.text)
         })));
 
         return {
             text: randomQuote.text,
             author: randomQuote.author || 'Unknown',
-            tags: ['inspirational']
+            tags: detectCategories(randomQuote.text)
         };
     } catch (error) {
         console.error('API Error:', error);
