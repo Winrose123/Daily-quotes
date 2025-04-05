@@ -170,35 +170,70 @@ function displayTags(categories) {
 }
 
 async function getQuoteFromAPI() {
-    try {
-        console.log('Fetching quote from API...');
-        const response = await fetch('https://goquotes-api.herokuapp.com/api/v1/random?count=1');
-        
-        console.log('API Response status:', response.status);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    const apiEndpoints = [
+        'https://api.quotable.io/random',
+        'https://type.fit/api/quotes'
+    ];
+
+    let lastError = null;
+
+    // Try each endpoint until one works
+    for (const endpoint of apiEndpoints) {
+        try {
+            console.log(`Trying endpoint: ${endpoint}`);
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                mode: 'cors',
+                cache: 'no-cache'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Handle different API response formats
+            if (endpoint.includes('quotable.io')) {
+                if (!data || !data.content) {
+                    throw new Error('Invalid quote data');
+                }
+                return {
+                    text: data.content,
+                    author: data.author || 'Unknown'
+                };
+            } else if (endpoint.includes('type.fit')) {
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('Invalid quote data');
+                }
+                const quote = data[Math.floor(Math.random() * data.length)];
+                return {
+                    text: quote.text,
+                    author: quote.author?.replace(', type.fit', '') || 'Unknown'
+                };
+            }
+        } catch (error) {
+            console.error(`Error with ${endpoint}:`, error);
+            lastError = error;
+            // Continue to next endpoint
+            continue;
         }
-        
-        const data = await response.json();
-        console.log('API Response data:', data);
-        
-        if (!data || !data.quotes || !data.quotes[0]) {
-            throw new Error('Invalid quote data');
-        }
-        
-        const quote = data.quotes[0];
-        return {
-            text: quote.text,
-            author: quote.author || 'Unknown'
-        };
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
     }
+
+    // If we get here, all endpoints failed
+    throw lastError || new Error('All API endpoints failed');
 }
 
 async function getNewQuote() {
     vibrate(50);
+    let errorDiv = document.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.remove(); // Remove any existing error message
+    }
+
     try {
         toggleLoading(true);
         console.log('Starting quote fetch...');
@@ -247,6 +282,8 @@ async function getNewQuote() {
         
         if (!navigator.onLine) {
             errorMessage.textContent = 'No internet connection. Using offline quotes.';
+        } else if (error.message.includes('All API endpoints failed')) {
+            errorMessage.textContent = 'Quote services are currently unavailable. Using offline quotes.';
         } else if (error.message.includes('Failed to fetch')) {
             errorMessage.textContent = 'Network error. Using offline quotes.';
         } else {
@@ -255,10 +292,12 @@ async function getNewQuote() {
         
         document.querySelector('.quote-card').appendChild(errorMessage);
         
-        // Remove error message after 3 seconds
+        // Remove error message after 5 seconds
         setTimeout(() => {
-            errorMessage.remove();
-        }, 3000);
+            if (errorMessage.parentNode) {
+                errorMessage.remove();
+            }
+        }, 5000);
     } finally {
         toggleLoading(false);
         console.log('Quote fetch complete.');
