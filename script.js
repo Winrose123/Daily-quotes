@@ -284,12 +284,11 @@ async function preloadQuotes() {
     isPreloading = true;
 
     try {
-        const response = await fetch('https://api.quotable.io/quotes/random?limit=50', {
+        const response = await fetch('https://type.fit/api/quotes', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
             },
-            mode: 'cors',
             cache: 'default'
         });
 
@@ -302,11 +301,16 @@ async function preloadQuotes() {
             throw new Error('Invalid quote data');
         }
 
+        // Shuffle the array to get random quotes
+        const shuffled = data.sort(() => 0.5 - Math.random());
+        // Take first 50 quotes
+        const selected = shuffled.slice(0, 50);
+
         // Add new quotes to cache
-        quoteCache.push(...data.map(quote => ({
-            text: quote.content,
+        quoteCache.push(...selected.map(quote => ({
+            text: quote.text,
             author: quote.author || 'Unknown',
-            tags: quote.tags || ['inspirational']
+            tags: ['inspirational'] // This API doesn't provide tags
         })));
 
     } catch (error) {
@@ -329,13 +333,12 @@ async function getQuoteFromAPI() {
             return quoteCache.shift();
         }
 
-        // If cache is empty, fetch one quote immediately
-        const response = await fetch('https://api.quotable.io/quotes/random?limit=1', {
+        // If cache is empty, fetch quotes and use one
+        const response = await fetch('https://type.fit/api/quotes', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
             },
-            mode: 'cors',
             cache: 'default'
         });
 
@@ -343,15 +346,27 @@ async function getQuoteFromAPI() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const [data] = await response.json();
-        if (!data || !data.content) {
+        const data = await response.json();
+        if (!Array.isArray(data)) {
             throw new Error('Invalid quote data');
         }
 
+        // Get a random quote
+        const randomQuote = data[Math.floor(Math.random() * data.length)];
+
+        // Add the rest to cache
+        const otherQuotes = data.filter(q => q !== randomQuote);
+        const shuffled = otherQuotes.sort(() => 0.5 - Math.random());
+        quoteCache.push(...shuffled.slice(0, 50).map(quote => ({
+            text: quote.text,
+            author: quote.author || 'Unknown',
+            tags: ['inspirational']
+        })));
+
         return {
-            text: data.content,
-            author: data.author || 'Unknown',
-            tags: data.tags || ['inspirational']
+            text: randomQuote.text,
+            author: randomQuote.author || 'Unknown',
+            tags: ['inspirational']
         };
     } catch (error) {
         console.error('API Error:', error);
