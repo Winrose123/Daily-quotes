@@ -307,12 +307,21 @@ function detectCategories(text) {
 }
 
 // API configuration
-const API_URL = 'https://quotes.rest/qod';
-const API_KEY = 'YOUR_API_KEY'; // Replace with your actual API key
+const API_URL = 'https://type.fit/api/quotes';
 
 // Quote cache
 let quoteCache = [];
 let isPreloading = false;
+
+// Load quotes from localStorage if available
+try {
+    const savedCache = localStorage.getItem('quoteCache');
+    if (savedCache) {
+        quoteCache = JSON.parse(savedCache);
+    }
+} catch (error) {
+    console.error('Error loading cache:', error);
+}
 
 // Preload quotes in background
 async function preloadQuotes() {
@@ -360,55 +369,45 @@ async function preloadQuotes() {
 async function getQuoteFromAPI() {
     try {
         // If cache is low, preload more quotes
-        if (quoteCache.length < 10) {
-            preloadQuotes();
-        }
-
-        // If we have cached quotes, use one
         if (quoteCache.length > 0) {
-            return quoteCache.shift();
+            const randomQuote = getRandomQuote(quoteCache);
+            // Ensure the quote has tags
+            if (!randomQuote.tags || randomQuote.tags.length === 0) {
+                randomQuote.tags = detectCategories(randomQuote.text);
+            }
+            return randomQuote;
         }
 
-        // If cache is empty, fetch quotes and use one
-        const response = await fetch('https://type.fit/api/quotes', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-            },
-            cache: 'default'
-        });
-
+        // Fetch new quotes from API
+        const response = await fetch(API_URL);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error('Failed to fetch quotes');
         }
 
         const data = await response.json();
         
-        if (!data.contents || !data.contents.quotes || !data.contents.quotes[0]) {
-            throw new Error('Invalid API response format');
-        }
-
-        const quote = data.contents.quotes[0];
-        const formattedQuote = {
-            text: quote.quote,
+        // Format and cache all quotes
+        const formattedQuotes = data.map(quote => ({
+            text: quote.text,
             author: quote.author || 'Unknown',
-            tags: [...(quote.categories || []), ...(quote.tags || [])]
-        };
+            tags: detectCategories(quote.text)
+        }));
 
-        // Add additional categories based on content
-        const detectedCategories = detectCategories(formattedQuote.text);
-        formattedQuote.tags = [...new Set([...formattedQuote.tags, ...detectedCategories])];
+        // Update cache with new quotes
+        quoteCache = formattedQuotes;
+        localStorage.setItem('quoteCache', JSON.stringify(quoteCache));
 
-        // Add to cache if it's not already there
-        if (!quoteCache.some(q => q.text === formattedQuote.text)) {
-            quoteCache.push(formattedQuote);
-            saveQuoteCache();
-        }
-
-        return formattedQuote;
+        // Return a random quote
+        return getRandomQuote(formattedQuotes);
     } catch (error) {
-        console.error('Error fetching quote:', error);
-        throw error;
+        console.error('Error fetching quotes:', error);
+        // Use fallback quotes if API fails
+        const fallbackQuote = getRandomQuote(fallbackQuotes);
+        return {
+            text: fallbackQuote.quoteText,
+            author: fallbackQuote.quoteAuthor,
+            tags: fallbackQuote.tags
+        };
     }
 }
 
