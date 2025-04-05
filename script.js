@@ -309,6 +309,15 @@ function detectCategories(text) {
 // API configuration
 const API_URL = 'https://type.fit/api/quotes';
 
+// Save quote cache to localStorage
+function saveQuoteCache() {
+    try {
+        localStorage.setItem('quoteCache', JSON.stringify(quoteCache));
+    } catch (error) {
+        console.warn('Failed to save quote cache:', error);
+    }
+}
+
 // Quote cache
 let quoteCache = [];
 let isPreloading = false;
@@ -371,55 +380,44 @@ async function getQuoteFromAPI() {
         // If we have cached quotes, use them
         if (quoteCache.length > 0) {
             const randomQuote = getRandomQuote(quoteCache);
-            // Ensure the quote has tags
             if (!randomQuote.tags || randomQuote.tags.length === 0) {
                 randomQuote.tags = detectCategories(randomQuote.text);
             }
             return randomQuote;
         }
 
-        // Fetch new quotes from API
-        const response = await fetch(API_URL, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
-
+        console.log('Fetching quotes from API...');
+        const response = await fetch(API_URL);
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        if (!Array.isArray(data)) {
-            throw new Error('Invalid API response format');
+        const quotes = await response.json();
+        
+        if (!Array.isArray(quotes) || quotes.length === 0) {
+            throw new Error('Invalid or empty response from API');
         }
 
-        // Format and cache all quotes
-        const formattedQuotes = data.map(quote => ({
-            text: quote.text || '',
+        // Format quotes and add categories
+        const formattedQuotes = quotes.map(quote => ({
+            text: quote.text,
             author: quote.author || 'Unknown',
-            tags: detectCategories(quote.text || '')
-        })).filter(quote => quote.text.trim() !== '');
+            tags: detectCategories(quote.text)
+        }));
 
-        if (formattedQuotes.length === 0) {
-            throw new Error('No valid quotes received');
-        }
-
-        // Update cache with new quotes
+        // Update cache
         quoteCache = formattedQuotes;
-        try {
-            localStorage.setItem('quoteCache', JSON.stringify(quoteCache));
-        } catch (storageError) {
-            console.warn('Failed to cache quotes:', storageError);
-        }
+        saveQuoteCache();
 
         // Return a random quote
-        return getRandomQuote(formattedQuotes);
+        const randomQuote = getRandomQuote(formattedQuotes);
+        console.log('Successfully fetched quote:', randomQuote);
+        return randomQuote;
+
     } catch (error) {
-        console.error('Error fetching quotes:', error);
-        // Use fallback quotes if API fails
+        console.error('API Error:', error);
+        // Use a fallback quote
         const fallbackQuote = getRandomQuote(fallbackQuotes);
         return {
             text: fallbackQuote.quoteText,
